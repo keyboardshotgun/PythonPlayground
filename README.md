@@ -1,8 +1,8 @@
-Python 3.8, tkinter, bs4, selenium, PIL
+Python 3.8, tkinter, PyQt5 , bs4, selenium, PIL
 
 1. Nxxxx Theme stock trend analysis
 
-2. simple colorpicker for windows
+2. simple color picker for windows
 
 3. korea vitamin pills Ingredients info (working)
 
