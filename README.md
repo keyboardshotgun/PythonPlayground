@@ -4,6 +4,8 @@ Python 3.8, tkinter, PyQt5 , bs4, selenium, PIL
 
 2. simple color picker for windows
 
+3. html tree ul/ui to python dict
+
 3. korea vitamin pills Ingredients info (working)
 
 4. simple memo with weather info (working)
