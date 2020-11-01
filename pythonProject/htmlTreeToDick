@@ -110,7 +110,9 @@ def makeBodyCollection(keyChar):  # 데이터 콜렉션을 만든다
         print('비었음 1')
 
 try:
-    page = open('D:/PycharmProjects/pythonProject/yahyo.html', 'r', encoding='UTF8')
+
+    //local로 받아온 파일을 대상으로 처리
+    page = open('D:/yahyo.html', 'r', encoding='UTF8')
     soup = BeautifulSoup(page, 'html5lib')  # html5lib ,  lxml
     tag_list = soup.find('ul', class_='depth01')
     makeCodeName()  # 코드네임표 만들기
