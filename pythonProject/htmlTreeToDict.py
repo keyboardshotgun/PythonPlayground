@@ -1,11 +1,12 @@
-import time
+# import time
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-import re
-from selenium.webdriver.common.by import By
+
+# import re
+# from selenium.webdriver.common.by import By
 
 makeDict = dict()
 top_code_list = dict()
@@ -13,6 +14,7 @@ tag_list = ''
 
 
 def nodeMaker(key, value):  # 키 노드를 만든다
+
     global makeDict
     try:
         if str(key) not in makeDict:
@@ -24,14 +26,14 @@ def nodeMaker(key, value):  # 키 노드를 만든다
                 makeDict[key[:1]][key[:3]][key] = dict()
             elif len(key) == 5:
                 if type(makeDict[key[:1]][key[:3]][key[:4]]) is list:
-                    makeDict[key[:1]][key[:3]][key[:4]].append({key : [value]})
+                    makeDict[key[:1]][key[:3]][key[:4]].append({key: [value]})
                 else:
                     makeDict[key[:1]][key[:3]][key[:4]][key] = dict()
-                print(type(makeDict[key[:1]][key[:3]][key[:4]]), '/=>', key)
+                    # print(type(makeDict[key[:1]][key[:3]][key[:4]]), '/=>', key)
             elif len(key) == 6:
                 print('number 6 ?')
     finally:
-        print(key, makeDict)
+        print('')
 
 
 def makeCodeName():  # 코드 한글 변환 콜렉션을 만든다.
@@ -109,10 +111,11 @@ def makeBodyCollection(keyChar):  # 데이터 콜렉션을 만든다
     else:
         print('비었음 1')
 
+
 try:
 
-    //local로 받아온 파일을 대상으로 처리
-    page = open('D:/yahyo.html', 'r', encoding='UTF8')
+    # local로 받아온 파일을 대상으로 처리
+    page = open('D:\\PycharmProjects\\pythonProject\\yahyo.html', 'r', encoding='UTF8')
     soup = BeautifulSoup(page, 'html5lib')  # html5lib ,  lxml
     tag_list = soup.find('ul', class_='depth01')
     makeCodeName()  # 코드네임표 만들기
