@@ -152,15 +152,12 @@ try:
     soup = BeautifulSoup(page, 'html5lib')  # html5lib ,  lxml
     tag_list = soup.find('ul', class_='depth01')
 
+    charList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Z']
+    for charX in charList:  # 크롤링 시작
+        makeBodyCollection(charX)
+
     makeCodeName()
     makeCodeData()
-
-    # makeCodeName()  # 코드네임표 만들기
-    # charList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Z']
-    # for charX in charList:  # 크롤링 시작
-    #     makeBodyCollection(charX)
-    #
-    # print(makeDict)
 
 finally:
     # print(top_code_list)
