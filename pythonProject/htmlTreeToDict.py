@@ -1,16 +1,25 @@
 # import time
-from selenium import webdriver
 # from selenium.webdriver.chrome.options import Options
 # from selenium.webdriver.support.ui import WebDriverWait
 # from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-
 # import re
 # from selenium.webdriver.common.by import By
 
+from bs4 import BeautifulSoup
+from selenium import webdriver
+import pymysql
+
 makeDict = dict()
-top_code_list = dict()
+top_code_list = list()
 tag_list = ''
+
+SERVER = pymysql.connect(
+    host='192.168.0.21',
+    user='',
+    password='',
+    db='',
+    charset='utf8'
+)
 
 
 def nodeMaker(key, value):  # 키 노드를 만든다
@@ -36,7 +45,7 @@ def nodeMaker(key, value):  # 키 노드를 만든다
         print('')
 
 
-def makeCodeName():  # 코드 한글 변환 콜렉션을 만든다.
+def makeCodeName():  # 타이틀 한글코드 추출
     global top_code_list
     global tag_list
     if tag_list:
@@ -44,30 +53,13 @@ def makeCodeName():  # 코드 한글 변환 콜렉션을 만든다.
         second_titles = tag_list.select('body > ul > li > ul > li > div.list > a')
         third_titles = tag_list.select('body > ul > li > ul > li > ul > li > div.list > a')
         fourth_titles = tag_list.select('body > ul > li > ul > li > ul > li > ul > li > div.list > a')
+        datas = [fisrst_titles, second_titles, third_titles, fourth_titles]
+        for data in datas:
+            for title in data:
+                top_code_list.append((title.parent.parent.attrs['id'], title.text))
 
-        if fisrst_titles:
-            for title in fisrst_titles:
-                top_code_list[title.parent.parent.attrs['id']] = title.text
-        else:
-            print('비었음 fisrst_titles')
-
-        if second_titles:
-            for title2 in second_titles:
-                top_code_list[title2.parent.parent.attrs['id']] = title2.text
-        else:
-            print('비었음 second_titles')
-
-        if third_titles:
-            for title3 in third_titles:
-                top_code_list[title3.parent.parent.attrs['id']] = title3.text
-        else:
-            print('비었음 third_titles')
-
-        if fourth_titles:
-            for title4 in fourth_titles:
-                top_code_list[title4.parent.parent.attrs['id']] = title4.text
-        else:
-            print('비었음 fourth_titles')
+        sql = """INSERT IGNORE INTO drug_kpic_code_titles(code_index, code_name_kor) VALUES (%s, %s)"""
+        insertDataToServer(sql, top_code_list)
     else:
         print('비었음 tag_list')
 
@@ -112,19 +104,63 @@ def makeBodyCollection(keyChar):  # 데이터 콜렉션을 만든다
         print('비었음 1')
 
 
+def makeCodeData():  # 데이터 한글 코드 추출
+    global tag_list
+    data_code_list = list()
+    if tag_list:
+        dep3_datas = tag_list.select('body > ul > li > ul > li > ul > li > ul > li > a')
+        dep4_datas = tag_list.select('body > ul > li > ul > li > ul > li > ul > li > ul > li > a')
+
+        datas = [dep3_datas, dep4_datas]
+        for data in datas:
+            for title in data:
+                keyCode = title.parent.parent.attrs['id']
+                if keyCode and title.text:
+                    data_code_list.append((keyCode[2:], title.text))
+
+        sql = """INSERT IGNORE INTO drug_kpic_code_data(code_index, data_name_kor) VALUES (%s, %s)"""
+        insertDataToServer(sql, data_code_list)
+    else:
+        print('비었음 makeCodeData tag_list')
+
+
+def insertDataToServer(sql, input_data):
+    tempData = input_data
+    if len(tempData) > 0:
+        try:
+            insert_sql = sql
+            CURSOR = SERVER.cursor(pymysql.cursors.DictCursor)
+            CURSOR.executemany(insert_sql, tempData)
+            SERVER.commit()
+        except InterruptedError:
+            pass
+        except SERVER.IntegrityError as err:
+            SERVER.rollback()
+            print("입력 실패, 중복 코드는 입력이 허용되지 않습니다.")
+            print(err)
+        finally:
+            print("DB 접속을 종료 합니다")
+            SERVER.close()
+    else:
+        print("원본 데이터가 비어 있습니다")
+
+
 try:
 
     # local로 받아온 파일을 대상으로 처리
     page = open('D:\\PycharmProjects\\pythonProject\\yahyo.html', 'r', encoding='UTF8')
     soup = BeautifulSoup(page, 'html5lib')  # html5lib ,  lxml
     tag_list = soup.find('ul', class_='depth01')
-    makeCodeName()  # 코드네임표 만들기
 
-    charList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Z']
-    for charX in charList:  # 크롤링 시작
-        makeBodyCollection(charX)
+    #makeCodeName()
+    #makeCodeData()
 
-    print(makeDict)
+    # makeCodeName()  # 코드네임표 만들기
+    # charList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Z']
+    # for charX in charList:  # 크롤링 시작
+    #     makeBodyCollection(charX)
+    #
+    # print(makeDict)
 
 finally:
     # print(top_code_list)
