@@ -15,9 +15,9 @@ tag_list = ''
 
 SERVER = pymysql.connect(
     host='192.168.0.21',
-    user='',
-    password='',
-    db='',
+    user='****',
+    password='****',
+    db='****',
     charset='utf8'
 )
 
@@ -49,7 +49,7 @@ def makeCodeName():  # 타이틀 한글코드 추출
     global top_code_list
     global tag_list
     if tag_list:
-        fisrst_titles = tag_list.select('body > ul > li > div.list.selected > a')
+        fisrst_titles = tag_list.select('body > ul > li > div.list > a')
         second_titles = tag_list.select('body > ul > li > ul > li > div.list > a')
         third_titles = tag_list.select('body > ul > li > ul > li > ul > li > div.list > a')
         fourth_titles = tag_list.select('body > ul > li > ul > li > ul > li > ul > li > div.list > a')
@@ -152,8 +152,8 @@ try:
     soup = BeautifulSoup(page, 'html5lib')  # html5lib ,  lxml
     tag_list = soup.find('ul', class_='depth01')
 
-    #makeCodeName()
-    #makeCodeData()
+    makeCodeName()
+    makeCodeData()
 
     # makeCodeName()  # 코드네임표 만들기
     # charList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Z']
