@@ -1,4 +1,5 @@
 import os
+import re
 from tkinter import *
 from tkinter import ttk
 import tkinter.font as tk_font
@@ -6,15 +7,21 @@ import random
 import json
 import tkinter.messagebox as mbox
 import shutil
+from bs4 import BeautifulSoup
+import requests
+import os
 
 # from math import *
 q_list = []
 r_list = []
 f_list = []
+
 # 현재 작업의 path => print(os.getcwd())
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WORK_DIR = BASE_DIR + "\\"
 EXCEPTLIST = ["ETC-0-A", "ETC-1-A", "#INFO", "문제풀이"]
+headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                         "Chrome/85.0.4183.121 Safari/537.36 Edg/85.0.564.63"}
 
 
 def startInit():
@@ -26,6 +33,7 @@ def startInit():
         q_list = tempJson['data']
         f_list = tempJson['favor']
         r_list = list()
+
         for entry in q_list:
             if str(entry['ID']) not in EXCEPTLIST and EXCEPTLIST[3] not in str(entry['Description']):
                 r_list.append(entry)
@@ -42,7 +50,7 @@ class MyApp:
         self.location_combo = None
         self.font8 = tk_font.Font(family="맑은 고딕", size=8)
         self.font10 = tk_font.Font(family="맑은 고딕", size=10)
-        self.Font10 = tk_font.Font(family="맑은 고딕", size=10, weight="bold")
+        self.Font10 = tk_font.Font(family="맑은 고딕", size=11, weight="bold")
         self.font12 = tk_font.Font(family="맑은 고딕", size=12)
         self.categoryList = self.makeCategory()  # 전체 문제 리스트
         self.selectedQuestionList = self.questionList  # 실제 문제제출 용 리스트
@@ -51,6 +59,8 @@ class MyApp:
         self.btnActColor = "#339167"
         self.savebtnColor = "#d27e4a"
         self.savebtnActColor = "#7d4b2c"
+        self.scrollBarB = None
+        self.conBox = None
 
         # relief option => flat, groove, raised, ridge, solid, sunken
         # 프레임 시작
@@ -78,10 +88,23 @@ class MyApp:
                                    , activebackground=self.btnActColor, activeforeground="#1e573e", overrelief="ridge"
                                    ).pack(side=LEFT, padx=5)
 
-        self.searchBtn = Button(self.frameA, text="검색", command=self.searchEngine
+        self.getWebNewWordBtn = Button(self.frameA, text="웹신규", command=self.addNewKeywordFromWeb
+                                       , width=8, height=1, relief="groove", fg="white", bg=self.btnColor,
+                                       font=self.Font10
+                                       , activebackground=self.btnActColor, activeforeground="#1e573e",
+                                       overrelief="ridge"
+                                       ).pack(side=LEFT, padx=5)
+
+        self.searchBtn = Button(self.frameA, text="사전검색", command=self.searchEngine
                                 , width=6, height=1, relief="groove", fg="white", bg=self.btnColor, font=self.Font10
                                 , activebackground=self.btnActColor, activeforeground="#1e573e", overrelief="ridge"
-                                ).pack(side=RIGHT, padx=10)
+                                ).pack(side=RIGHT, padx=5)
+
+        self.webSearchBtn = Button(self.frameA, text="웹검색", command=self.webSearchEngine
+                                   , width=6, height=1, relief="groove", fg="white", bg=self.btnColor, font=self.Font10
+                                   , activebackground=self.btnActColor, activeforeground="#1e573e", overrelief="ridge"
+                                   ).pack(side=RIGHT, padx=5)
+
         # Search Input
         self.searchInput = Entry(self.frameA, width=20, borderwidth=6, relief='flat', justify=LEFT)
         self.searchInput.bind('<Return>', self.enterCallBack)  # 검색 엔터키 바인딩
@@ -190,7 +213,7 @@ class MyApp:
         self.favorCheckbutton.pack(side=BOTTOM, padx=5, pady=5, anchor=SE)
 
         self.message_question = Message(self.frameB, relief="sunken", textvariable=self.message_question_text,
-                                        font=self.font12
+                                        font=self.Font10
                                         , fg="#333333", bg="#FFFFFF", width=900, justify=LEFT
                                         )
 
@@ -205,6 +228,12 @@ class MyApp:
 
         # 선택지 / 검색결과 출력단 프레임
         self.frameD = LabelFrame(root, text="화이팅")
+        self.scrollBarB = Scrollbar(self.frameD)
+        self.scrollBarB.pack(side="right", fill="y")
+        self.conBox = Text(self.frameD, yscrollcommand=self.scrollBarB.set, width=1150, height=70, wrap=WORD,
+                           font=self.font10)
+        self.conBox.pack(side="left", fill="both", expand=True, ipadx=5, ipady=5, padx=5, pady=5)
+        self.scrollBarB.config(command=self.conBox.yview)
 
         self.frameA.pack(fill=BOTH, padx=5, pady=10)  # 메뉴
         self.frameE.pack(fill=BOTH, padx=5, pady=10)  # 신규 문제 작성
@@ -367,6 +396,10 @@ class MyApp:
     def updateOrAddJsonFile(self):
         global q_list
         global f_list
+
+        for index, entry in enumerate(q_list):
+            entry['No'] = index + 1
+
         OriginFilePath = WORK_DIR + 'quest_list.json'
         BakupFilePath = WORK_DIR + 'quest_list.bak'
         if os.path.isfile(WORK_DIR + 'quest_list.json'):
@@ -403,6 +436,7 @@ class MyApp:
         self.frameA.update()
         self.frameB.update()
         self.frameE.update()
+        self.frameD.update()
 
     def makeCategory(self) -> list:
         category_temp = {'전체목록'}
@@ -483,7 +517,7 @@ class MyApp:
                 self.makeAnswerButton(index, e)
 
             self.isFavorQuestion(nowQuestionNo)
-            # print('번호:', self.collectAnswerIndex, ' | 답:', nowAnswer)
+            print('번호:', self.collectAnswerIndex, ' | 답:', nowAnswer)
         else:
             mbox.showinfo('완료', '해당 카테고리의 모든 문제를 풀었습니다.\n새로운 카테고리를 선택해 주세요.')
             # {"No":1 ,"ID":"2020-02-A-1","Feq":1,"Word":"( new ) FunctionName()","Description":"Java 인스턴스 생성 명령어"}
@@ -517,18 +551,80 @@ class MyApp:
             lines.append(text[i:i + self.TextBreakLinesEvery])
         return '\n'.join(lines)
 
-    def searchEngine(self):
+    def webSearchEngine(self):
 
+        search_text = self.searchInput.get().strip()
+        if search_text and len(search_text) > 1:
+
+            first_check = ''
+            for widget in self.frameD.winfo_children():
+                first_check = widget.winfo_class()
+
+            if first_check == 'Button':
+                print('버튼이 들어 있네 / 기존 것을 날리자')
+                self.resetFrameD()
+
+            #  신규등록데이터 1 - 300
+            #  http://terms.tta.or.kr/dictionary/dictionaryNewWordList.do?listPage=1&firstWord=N&word_seq=&listCount=300
+            siteUrl = "https://terms.tta.or.kr/dictionary/dictionaryView.do?subject="
+            toUrl = siteUrl + search_text
+            try:
+                res = requests.get(toUrl, headers=headers)
+                if res.status_code != 404:
+                    soup = BeautifulSoup(res.text, "lxml")
+                    motherDiv = soup.find_all("div", id=["cont"])
+                    title = ''
+                    content = ''
+
+                    for row in motherDiv:
+                        title = row.find_all('dt')
+                        content = row.find_all("div", class_=["no_css"])
+
+                    if title and content:
+                        # 프레임에 정보 넣기
+                        word = title[0].text.strip()
+                        desc = content[0].text.strip()
+
+                        self.conBox.delete('1.0', END)
+                        self.message_result_text.set('')
+
+                        self.message_result_text.set('키워드 웹검색 : ' + word)
+                        self.conBox.insert(END, desc)
+                        self.conBox.insert(END, '\n\n')
+                        self.frameD.update()
+                    else:
+                        mbox.showinfo('!', '검색 결과가 없습니다.')
+
+            except SyntaxError:
+                print("Syntax", 'Syntax 오류 입니다.')
+            except ConnectionError:
+                print("ConnectionError", 'ConnectionError 오류 입니다.')
+        else:
+            mbox.showinfo('!', '2자 이상 입력')
+
+    def resetFrameD(self):
         for widget in self.frameD.winfo_children():
             widget.destroy()
+        self.scrollBarB = Scrollbar(self.frameD)
+        self.scrollBarB.pack(side="right", fill="y")
+        self.conBox = Text(self.frameD, yscrollcommand=self.scrollBarB.set, width=1150, height=70, wrap=WORD,
+                           font=self.font10)
+        self.conBox.pack(side="left", fill="both", expand=True, ipadx=5, ipady=5, padx=5, pady=5)
+        self.scrollBarB.config(command=self.conBox.yview)
 
-        scrollBarB = Scrollbar(self.frameD)
-        scrollBarB.pack(side="right", fill="y")
-        conBox = Text(self.frameD, yscrollcommand=scrollBarB.set, width=1150, height=70, wrap=WORD, font=self.font10)
-        conBox.pack(side="left", fill="both", expand=True, ipadx=5, ipady=5, padx=5, pady=5)
-        scrollBarB.config(command=conBox.yview)
+    def searchEngine(self):
+        first_check = ''
+        for widget in self.frameD.winfo_children():
+            first_check = widget.winfo_class()
+
+        if first_check == 'Button':
+            print('버튼이 들어 있네 / 기존 것을 날리자')
+            self.resetFrameD()
+
+        # 사전 검색시작
         text = self.searchInput.get().strip()
         self.message_result_text.set('')
+        self.conBox.delete('1.0', END)
         tempList = list()
         if len(text) >= 2:
 
@@ -548,8 +644,8 @@ class MyApp:
                 tempList.sort()
                 for index, xty in enumerate(tempList):
                     thisStr = '\n' + str(index + 1) + ') ' + xty
-                    conBox.insert(END, thisStr)
-                    conBox.insert(END, '\n\n')
+                    self.conBox.insert(END, thisStr)
+                    self.conBox.insert(END, '\n\n')
 
                 self.frameD.update()
             else:
@@ -557,10 +653,66 @@ class MyApp:
         else:
             mbox.showinfo('알림', "검색어는 2자이상 입력해 주세요")
 
+    def addNewKeywordFromWeb(self):
+        #  신규등록데이터 1 - 300
+        global q_list
+        self.conBox.delete('1.0', END)
+        self.message_result_text.set('')
+        toUrl = "http://terms.tta.or.kr/dictionary/dictionaryNewWordList.do?listPage=1&firstWord=N&word_seq=&listCount=300"
+        tempList = []
+
+        try:
+            res = requests.get(toUrl, headers=headers)
+            if res.status_code != 404:
+                soup = BeautifulSoup(res.text, "lxml")
+                motherDiv = soup.find_all("div", id=["m_content"])
+                dlLists = None
+
+                for row in motherDiv:
+                    dlLists = row.find_all('dl')
+
+                next_q_Index = len(q_list)
+                regex = re.compile("\.{3,}")
+                desc = ''
+
+                for dl in dlLists:
+                    Word = dl.find_all('dt')[0].text.strip()
+                    Description = dl.find_all('dd')[0].text.strip()
+                    yesOrNo = regex.search(Description)
+
+                    if yesOrNo is not None:  # ... 이 있다.
+                        t_array = Description.split('.')[0:-4]  # 신규 등록시 에러가 난다면 여기가 문제다. 끝이 ... 으로 끝나지 않을 수도 있기 때문에...
+                        for XT in t_array:
+                            desc += XT.strip() + '.\n'
+                    else:
+                        t_array = Description.split('.')  # ... 이 없다
+                        for XT in t_array:
+                            desc += XT.strip() + '.\n'
+
+                    next_q_Index = next_q_Index + 1
+                    q_list.append({"No": next_q_Index , "ID": "2020-NEW", "Feq": 1, "Word": Word , "Description": desc})
+                    strText = '\t[ ' + Word + ' ]\n\n ㄴ> ' + desc
+                    tempList.append(strText)
+                    desc = ''
+
+                tempList.sort()
+
+                for index, xty in enumerate(tempList):
+                    thisStr = '\n' + str(index + 1) + ') ' + xty
+                    self.conBox.insert(END, thisStr)
+                    self.conBox.insert(END, '\n\n')
+
+                self.message_result_text.set('검색완료, 결과 : ' + str(len(dlLists)) + '건 있음')
+                self.updateOrAddJsonFile()
+
+        except SyntaxError:
+            print("Syntax", 'Syntax 오류 입니다.')
+        except ConnectionError:
+            print("ConnectionError", 'ConnectionError 오류 입니다.')
+
 
 startInit()
 root = Tk()
-
 w = 1100  # width for the Tk root
 h = 1100  # height for the Tk root
 ws = root.winfo_screenwidth()  # width of the screen

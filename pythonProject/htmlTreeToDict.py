@@ -15,9 +15,9 @@ tag_list = ''
 
 SERVER = pymysql.connect(
     host='192.168.0.21',
-    user='****',
-    password='****',
-    db='****',
+    user='null_man',
+    password='kknd1234',
+    db='future_db',
     charset='utf8'
 )
 
@@ -150,14 +150,27 @@ try:
     # local로 받아온 파일을 대상으로 처리
     page = open('D:\\PycharmProjects\\pythonProject\\yahyo.html', 'r', encoding='UTF8')
     soup = BeautifulSoup(page, 'html5lib')  # html5lib ,  lxml
-    tag_list = soup.find('ul', class_='depth01')
+    # tag_list = soup.find('ul', class_='depth01')
+    ndg_list = soup.find('div', id='newcode')
 
-    charList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Z']
-    for charX in charList:  # 크롤링 시작
-        makeBodyCollection(charX)
+    # KCPI 약학정보
+    # charList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Z']
+    # for charX in charList:  # 크롤링 시작
+    #     makeBodyCollection(charX)
+    # makeCodeName()
+    # makeCodeData()
 
-    makeCodeName()
-    makeCodeData()
+    # 식약청 의약품 분류코드
+    if ndg_list:
+        ngdCodeList = ndg_list.select('body > div#newcode > select > option')
+        for title in ngdCodeList:
+            top_code_list.append((title.attrs['value'][:4],title.text[8:]))
+
+        sql = """INSERT IGNORE INTO drug_mfds_code(code_index, code_name) VALUES (%s, %s)"""
+        insertDataToServer(sql, top_code_list)
+    else:
+        print('비었음 tag_list')
+
 
 finally:
     # print(top_code_list)
